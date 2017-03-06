@@ -49,21 +49,25 @@ header('Last-Modified: ' . date(DATE_RFC1123, $mtime));
         .piece-action {
             color: lightseagreen;
             font-size: 11px;
+            width: 2.3em;
         }
 
         .piece-action > i {
             cursor: pointer;
         }
 
+        .piece.paused [data-action=rewind],
+        .piece.playing [data-action=rewind],
         .piece.paused .piece-progress,
         .piece.playing .piece-progress,
-        .piece.playing .piece-pause {
+        .piece.playing [data-action=pause] {
             display: inline-block;
         }
 
-        .piece .piece-pause,
+        .piece [data-action=rewind],
+        .piece [data-action=pause],
         .piece .piece-progress,
-        .piece.playing .piece-play {
+        .piece.playing [data-action=play] {
             display: none;
         }
 
@@ -72,6 +76,7 @@ header('Last-Modified: ' . date(DATE_RFC1123, $mtime));
             margin-right: 10px;
             font-size: 11px;
             color: gray;
+
         }
 
         .piece-progress:after {
@@ -96,8 +101,9 @@ header('Last-Modified: ' . date(DATE_RFC1123, $mtime));
                                     <span class="piece-title"><?= $piece->name ?></span>
 
                                     <span class="piece-action pull-right">
-                                        <i class="glyphicon glyphicon-play piece-play"></i>
-                                        <i class="glyphicon glyphicon-pause piece-pause"></i>
+                                        <i data-action="play" class="glyphicon glyphicon-play"></i>
+                                        <i data-action="pause" class="glyphicon glyphicon-pause"></i>
+                                        <i data-action="rewind" class="glyphicon glyphicon-repeat"></i>
                                     </span>
 
                                     <span class="piece-info pull-right">
@@ -128,10 +134,22 @@ header('Last-Modified: ' . date(DATE_RFC1123, $mtime));
         w.DEBUG = false;
         var $playingPiece;
 
-        $(".album").delegate(".piece-play", "click", function () {
-            playMusic($(this).parentsUntil(".piece").last().parent());
-        }).delegate(".piece-pause", "click", function () {
-            pauseMusic($(this).parentsUntil(".piece").last().parent());
+        $(".album").delegate(".piece-action", "click", function (e) {
+
+            var $piece = $(this).parent();
+            switch (e.target.dataset.action) {
+                case "play":
+                    playMusic($piece);
+                    break;
+                case "pause":
+                    pauseMusic($piece);
+                    break;
+                case "rewind":
+                    playMusic($piece, true);
+                    break;
+                default:
+                    break;
+            }
         });
 
         function pauseMusic($piece) {
@@ -141,7 +159,7 @@ header('Last-Modified: ' . date(DATE_RFC1123, $mtime));
             });
         }
 
-        function playMusic($piece) {
+        function playMusic($piece, rewind = false) {
 
             if ($playingPiece) {
                 if ($playingPiece.data("piece-index") != $piece.data("piece-index")) {
@@ -157,6 +175,9 @@ header('Last-Modified: ' . date(DATE_RFC1123, $mtime));
             }
 
             $piece.children("audio").each(function (i, a) {
+                if (rewind) {
+                    a.currentTime = 0;
+                }
                 a.play();
             });
             $piece.toggleClass("playing", true).toggleClass("paused", false);
@@ -177,8 +198,8 @@ header('Last-Modified: ' . date(DATE_RFC1123, $mtime));
 
         function calcProgressBackground(cur, total) {
             var percent = cur * 100 / total;
-            var elapsed = "rgb(227, 227, 200)";
-            var left = "rgb(245, 245, 220)";
+            var elapsed = "rgb(235, 232, 208)";
+            var left = "rgb(245, 245, 225)";
             return `linear-gradient(90deg, ${elapsed} 0%, ${elapsed} ${percent}%, ${left} ${percent}%, ${left} 100%)`;
         }
 
